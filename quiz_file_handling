@@ -1,0 +1,154 @@
+import getpass
+import os
+
+# File paths for user data and scores
+USER_DATA_FILE = "users.txt"
+SCORES_FILE = "scores.txt"
+
+# Question bank for the quiz
+quiz_data = {
+    "DSA": {
+        1: ["What is the time complexity of binary search?", "O(log n)", "O(n)", "O(n log n)", "O(n^2)", "A"],
+        2: ["Which data structure is used for BFS?", "Stack", "Queue", "Linked List", "Tree", "B"],
+        3: ["Which data structure is used for LIFO?", "Stack", "Queue", "Deque", "Array", "A"],
+        4: ["In a max heap, where is the largest element stored?", "Root", "Leaf", "Middle", "Right Child", "A"],
+        5: ["What is a full binary tree?", "Tree with all levels full", "Tree with two children", "Tree with one child", "Tree with root only", "A"]
+    },
+    "DBMS": {
+        1: ["What is a primary key?", "A unique identifier for a record", "A foreign key", "A composite key", "A secondary key", "A"],
+        2: ["Which command is used to remove a table in SQL?", "DELETE", "DROP", "REMOVE", "ERASE", "B"],
+        3: ["What does 'JOIN' in SQL do?", "Combines rows", "Deletes rows", "Sorts rows", "Groups rows", "A"],
+        4: ["Which SQL clause is used to filter results?", "WHERE", "GROUP BY", "ORDER BY", "HAVING", "A"],
+        5: ["In a relational database, data is stored in?", "Rows", "Graphs", "Arrays", "Documents", "A"]
+    },
+    "Python": {
+        1: ["What keyword is used to define a function in Python?", "def", "func", "function", "lambda", "A"],
+        2: ["What does 'len()' function do?", "Calculates memory size", "Counts characters", "Returns length", "Assigns length", "C"],
+        3: ["How do you insert comments in Python code?", "//", "#", "/* */", "<!-- -->", "B"],
+        4: ["Which library is used for data manipulation?", "math", "os", "pandas", "sys", "C"],
+        5: ["How to declare a variable in Python?", "var x = 5", "x = 5", "int x = 5", "declare x", "B"]
+    }
+}
+
+def load_data(file):
+    """Load data from a file."""
+    if not os.path.exists(file):
+        return {}
+    with open(file, "r") as f:
+        data = {}
+        for line in f:
+            key, value = line.strip().split(":", 1)
+            if file == USER_DATA_FILE:
+                data[key] = value
+            else:
+                data[key] = eval(value)  # Convert string back to dictionary
+        return data
+
+def save_data(file, data):
+    """Save data to a file."""
+    with open(file, "w") as f:
+        for key, value in data.items():
+            f.write(f"{key}:{value}\n")
+
+# Load users and scores
+users = load_data(USER_DATA_FILE)
+scores = load_data(SCORES_FILE)
+
+def register():
+    """Register a new user."""
+    print("=== Registration ===")
+    username = input("Enter a username: ")
+    if username in users:
+        print("Username already exists!")
+        return
+    password = getpass.getpass("Enter a password: ")
+    users[username] = password
+    scores[username] = {}
+    save_data(USER_DATA_FILE, users)
+    save_data(SCORES_FILE, scores)
+    print("Registration successful!")
+
+def login():
+    """Login an existing user."""
+    print("=== Login ===")
+    username = input("Enter your username: ")
+    password = getpass.getpass("Enter your password: ")
+    if username in users and users[username] == password:
+        print("Login successful!")
+        return username
+    print("Invalid username or password!")
+    return None
+
+def attempt_quiz(username):
+    """Attempt a quiz and enforce 100% correctness."""
+    print("Select Quiz Category:")
+    for i, category in enumerate(quiz_data.keys(), start=1):
+        print(f"{i}. {category}")
+    choice = int(input("Enter choice: "))
+    category = list(quiz_data.keys())[choice - 1]
+
+    questions = quiz_data[category]
+    while True:
+        print(f"=== Attempting {category} Quiz ===")
+        correct_answers = 0
+        for q_num, q_data in questions.items():
+            print(f"Q{q_num}: {q_data[0]}")
+            for i, option in enumerate(q_data[1:5], start=1):
+                print(f"  {chr(64 + i)}. {option}")
+            answer = input("Your answer: ").upper()
+            if answer == q_data[5]:
+                correct_answers += 1
+            else:
+                print(f"Incorrect answer for Q{q_num}. Restarting quiz!")
+                break  # Restart quiz immediately if an answer is incorrect
+        if correct_answers == len(questions):
+            print("Quiz Completed with 100% success rate!")
+            scores[username][category] = correct_answers
+            save_data(SCORES_FILE, scores)
+            break
+        else:
+            print("You must answer all questions correctly to finish the quiz. Restarting...")
+
+def show_results(username):
+    """Show the user's quiz results."""
+    print("=== Results ===")
+    if scores[username]:
+        for category, score in scores[username].items():
+            print(f"{category}: {score}/{len(quiz_data[category])} correct")
+    else:
+        print("No quizzes attempted yet.")
+
+def main():
+    """Main function for the quiz application."""
+    username = None
+    while True:
+        print("\n=== Quiz Application ===")
+        print("1. Register")
+        print("2. Login")
+        print("3. Attempt Quiz")
+        print("4. Show Results")
+        print("5. Exit")
+        choice = input("Enter your choice: ")
+
+        if choice == "1":
+            register()
+        elif choice == "2":
+            username = login()
+        elif choice == "3":
+            if not username:
+                print("Please log in first!")
+            else:
+                attempt_quiz(username)
+        elif choice == "4":
+            if not username:
+                print("Please log in first!")
+            else:
+                show_results(username)
+        elif choice == "5":
+            print("Exiting Quiz Application. Goodbye!")
+            break
+        else:
+            print("Invalid choice. Please try again.")
+
+# Start the application
+main()
